@@ -3,20 +3,40 @@
 (function(window) {
   var WORKER_SRC = null;
   var scripts = document.getElementsByTagName('script');
-  WORKER_SRC = scripts[scripts.length - 1].src;
+  FILE_SRC = scripts[scripts.length - 1].src;
 
   function HttpWorker() {
     var dones = ['success', 'error', 'timeout'];
     var progs = ['start', 'progress', 'end'];
-    var httpMethos = ['get', 'post'];
+    var httpMethods = ['get', 'post'];
     this.worker = new Worker(this.__getWorkScriptSrc());
     this.__setDones(dones);
     this.__setProgs(progs);
-    this.__setHttpMethods(httpMethos);
+    this.__setHttpMethods(httpMethods);
+    this.__initOpts();
   }
 
+  HttpWorker.prototype.__initOpts = function() {
+    this.opts = {
+      url: null,
+      method: 'GET'
+    };
+  };
+
+  HttpWorker.prototype.__setOpts = function(vals) {
+    var _this = this;
+    Object.keys(vals).forEach(function(key){
+      _this.opts[key] = vals[key];
+    });
+  };
+
+  HttpWorker.prototype.__setOpt = function(key, val) {
+    this.opts[key] = val;
+  };
+
   HttpWorker.prototype.__getWorkScriptSrc = function() {
-    var arr = WORKER_SRC.split('/');
+    if (FILE_SRC === null) throw new Error();
+    var arr = FILE_SRC.split('/');
     var last = arr.length - 1;
     if (arr[last] !== 'httpworker.js') throw new Error('Failed httpworker.js');
     arr[last] = 'worker.js';
@@ -27,55 +47,59 @@
     var _this = this;
     fnc.map(function(v) {
       _this[v] = function(cb) {
-      _this.worker.addEventListener('message', function(msg) {
+        _this.worker.addEventListener('message', function(msg) {
+          var res = msg.data;
+          if (res.event === v) {
+            cb(res.data, res.status);
+          }
+        });
+        return _this;
+      }
+    });
+  };
+
+  HttpWorker.prototype.__setProgs = function(fnc) {
+    var _this = this;
+    fnc.map(function(v) {
+      _this[v] = function(cb) {
+        _this.worker.addEventListener('message', function(msg) {
+          var res = msg.data;
+          if (res.event === v) {
+            cb(res.data);
+          }
+        });
+        return _this;
+      }
+    });
+  };
+
+  HttpWorker.prototype.__setHttpMethods = function(methods) {
+    var _this = this;
+    methods.map(function(method){
+      _this[method] = function(url, opts) {
+        _this.__setOpt('url', url);
+        _this.__setOpt('method', method.toUpperCase());
+        _this.__setOpts(opts);
+        _this.request();
+      };
+    });
+  };
+
+  HttpWorker.prototype.request = function(data, success, error) {
+    this.__setOpts(data);
+    this.worker.postMessage(this.opts);
+
+    // tmp code
+    if (success || error) {
+      this.worker.onmessage = function(msg) {
         var res = msg.data;
-        if (res.event === v) {
-          cb(res.data, res.status);
-        }
-      });
-      return _this;
+        if (success && res.event === 'success') success(res.data);
+        if (error && res.event === 'error') error(res.data);
+      }
     }
-  });
-};
 
-HttpWorker.prototype.__setProgs = function(fnc) {
-  var _this = this;
-  fnc.map(function(v) {
-    _this[v] = function(cb) {
-      _this.worker.addEventListener('message', function(msg) {
-        var res = msg.data;
-        if (res.event === v) {
-          cb(res.data);
-        }
-      });
-      return _this;
-    }
-  });
-};
-
-HttpWorker.prototype.__setHttpMethods = function(methods) {
-  var _this = this;
-  methods.map(function(method){
-    _this[method] = function(opts) {
-      _this.request(opts);
-    };
-  });
-};
-
-HttpWorker.prototype.request = function(data, success, error) {
-  this.worker.postMessage(data);
-
-  // tmp code
-  if (success || error) {
-    this.worker.onmessage = function(msg) {
-      var res = msg.data;
-      if (success && res.event === 'success') success(res.data);
-      if (error && res.event === 'error') error(res.data);
-    }
-  }
-
-  return this;
-};
+    return this;
+  };
 
   window.httpWorker = new HttpWorker();
 
