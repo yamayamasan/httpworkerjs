@@ -1,0 +1,7 @@
+{
+  "name": "httpworkerjs",
+  "version": "0.0.1",
+  "main": "httpworker.js",
+  "repository": "https://github.com/yamayamasan/httpworkerjs.git",
+  "author": "yamayamasan <ya.ma.ands@gmail.com>"
+}
