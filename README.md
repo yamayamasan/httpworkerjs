@@ -1,6 +1,6 @@
 # httpworkerjs
 
-HTTP client for browsers using WebWorker
+Minimam HTTP client for browsers using WebWorker
 
 # Example
 
