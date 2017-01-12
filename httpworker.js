@@ -1,34 +1,32 @@
 'use strict';
 
-var WORKER_SRC = null;
-(function() {
+(function(window) {
+  var WORKER_SRC = null;
   var scripts = document.getElementsByTagName('script');
-  WORKER_SRC = scripts[scripts.length - 1];
-}());
+  WORKER_SRC = scripts[scripts.length - 1].src;
 
-function HttpWorker(data) {
-  var dones = ['success', 'error', 'timeout'];
-  var progs = ['start', 'progress', 'end'];
-  var httpMethos = ['get', 'post'];
-  this.worker = new Worker(this.__getWorkScriptSrc());
-  this.__setDones(dones);
-  this.__setProgs(progs);
-  this.__setHttpMethods(httpMethos);
-  this.datas = data || {};
-}
+  function HttpWorker() {
+    var dones = ['success', 'error', 'timeout'];
+    var progs = ['start', 'progress', 'end'];
+    var httpMethos = ['get', 'post'];
+    this.worker = new Worker(this.__getWorkScriptSrc());
+    this.__setDones(dones);
+    this.__setProgs(progs);
+    this.__setHttpMethods(httpMethos);
+  }
 
-HttpWorker.prototype.__getWorkScriptSrc = function() {
-  var arr = WORKER_SRC.split('/');
-  var last = arr.length - 1;
-  if (arr[last] !== 'httpworker.js') throw new Error('Failed httpworker.js');
-  arr[last] = 'worker.js';
-  return arr.join('/');
-};
+  HttpWorker.prototype.__getWorkScriptSrc = function() {
+    var arr = WORKER_SRC.split('/');
+    var last = arr.length - 1;
+    if (arr[last] !== 'httpworker.js') throw new Error('Failed httpworker.js');
+    arr[last] = 'worker.js';
+    return arr.join('/');
+  };
 
-HttpWorker.prototype.__setDones = function(fnc) {
-  var _this = this;
-  fnc.map(function(v) {
-    _this[v] = function(cb) {
+  HttpWorker.prototype.__setDones = function(fnc) {
+    var _this = this;
+    fnc.map(function(v) {
+      _this[v] = function(cb) {
       _this.worker.addEventListener('message', function(msg) {
         var res = msg.data;
         if (res.event === v) {
@@ -78,4 +76,8 @@ HttpWorker.prototype.request = function(data, success, error) {
 
   return this;
 };
+
+  window.httpWorker = new HttpWorker();
+
+}(window));
 
