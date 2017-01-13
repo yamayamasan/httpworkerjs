@@ -69,7 +69,7 @@
       _this[method] = function(url, opts) {
         opts.url = url;
         opts.method = method.toUpperCase();
-        return _this.request();
+        return _this.request(opts);
       };
     });
   };
