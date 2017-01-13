@@ -3,7 +3,6 @@
 
 (function (window) {
   var WORKER_FILE = 'worker.js';
-  var HTTPWORKER_FILE = 'httpworker.js';
   var scripts = document.getElementsByTagName('script');
   var SCRIPT_SRC = scripts[scripts.length - 1].src;
 
@@ -25,7 +24,6 @@
     if (SCRIPT_SRC === null) throw new Error();
     var arr = SCRIPT_SRC.split('/');
     var last = arr.length - 1;
-    if (arr[last] !== HTTPWORKER_FILE) throw new Error('Failed httpworker.js');
     arr[last] = WORKER_FILE;
     return arr.join('/');
   };

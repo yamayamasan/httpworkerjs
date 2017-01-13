@@ -1,112 +1,4 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-'use strict';
-
-require('es6-promise').polyfill();
-
-(function (window) {
-  var WORKER_FILE = 'worker.js';
-  var HTTPWORKER_FILE = 'httpworker.js';
-  var scripts = document.getElementsByTagName('script');
-  var SCRIPT_SRC = scripts[scripts.length - 1].src;
-
-  function HttpWorker() {
-    var dones = ['success', 'error', 'timeout'];
-    var progs = ['start', 'progress', 'end'];
-    var httpMethods = ['get', 'post', 'put', 'delete', 'head'];
-    this.worker = new Worker(this.__getWorkScriptSrc());
-    this.__setDones(dones);
-    this.__setProgs(progs);
-    this.__setHttpMethods(httpMethods);
-    this.opts = {
-      url: null,
-      method: 'GET'
-    };
-  }
-
-  HttpWorker.prototype.__getWorkScriptSrc = function () {
-    if (SCRIPT_SRC === null) throw new Error();
-    var arr = SCRIPT_SRC.split('/');
-    var last = arr.length - 1;
-    if (arr[last] !== HTTPWORKER_FILE) throw new Error('Failed httpworker.js');
-    arr[last] = WORKER_FILE;
-    return arr.join('/');
-  };
-
-  HttpWorker.prototype.__getOpts = function (opts) {
-    return Object.assign({}, this.opts, opts);
-  };
-
-  HttpWorker.prototype.__setProgs = function (fnc) {
-    var _this = this;
-
-    fnc.map(function (v) {
-      _this[v] = function (cb) {
-        _this.worker.addEventListener('message', function (msg) {
-          var res = msg.data;
-          if (res.event === v) {
-            cb(res.data);
-          }
-        });
-        return _this;
-      };
-    });
-  };
-
-  HttpWorker.prototype.__setHttpMethods = function (methods) {
-    var _this2 = this;
-
-    methods.map(function (method) {
-      _this2[method] = function (url, opts) {
-        opts.url = url;
-        opts.method = method.toUpperCase();
-        return _this2.request(opts);
-      };
-    });
-  };
-
-  HttpWorker.prototype.request = function (data, success, error) {
-    var _this3 = this;
-
-    var opts = this.__getOpts(data);
-    this.worker.postMessage(opts);
-
-    return new Promise(function (resolve, reject) {
-      _this3.worker.onmessage = function (msg) {
-        var res = msg.data;
-        if (res.event === 'success') resolve(res.data, res.status);
-
-        if (res.event === 'error') reject(res.data);
-      };
-    });
-  };
-
-  window.httpWorker = new HttpWorker();
-
-  if (typeof Object.assign != 'function') {
-    Object.assign = function (target) {
-      'use strict';
-
-      if (target === undefined || target === null) {
-        throw new TypeError('Cannot convert undefined or null to object');
-      }
-
-      var output = Object(target);
-      for (var index = 1; index < arguments.length; index++) {
-        var source = arguments[index];
-        if (source !== undefined && source !== null) {
-          for (var nextKey in source) {
-            if (Object.prototype.hasOwnProperty.call(source, nextKey)) {
-              output[nextKey] = source[nextKey];
-            }
-          }
-        }
-      }
-      return output;
-    };
-  }
-})(window);
-
-},{"es6-promise":2}],2:[function(require,module,exports){
 (function (process,global){
 /*!
  * @overview es6-promise - a tiny implementation of Promises/A+.
@@ -1266,7 +1158,7 @@ return Promise;
 })));
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":3}],3:[function(require,module,exports){
+},{"_process":2}],2:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -1448,4 +1340,111 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}]},{},[1]);
+},{}],3:[function(require,module,exports){
+'use strict';
+
+require('es6-promise').polyfill();
+
+(function (window) {
+  var WORKER_FILE = 'worker.promise.js';
+  var scripts = document.getElementsByTagName('script');
+  var SCRIPT_SRC = scripts[scripts.length - 1].src;
+
+  function HttpWorker() {
+    var dones = ['success', 'error', 'timeout'];
+    var progs = ['start', 'progress', 'end'];
+    var httpMethods = ['get', 'post', 'put', 'delete', 'head'];
+    this.worker = new Worker(this.__getWorkScriptSrc());
+    this.__setProgs(progs);
+    this.__setHttpMethods(httpMethods);
+    this.opts = {
+      url: null,
+      method: 'GET'
+    };
+  }
+
+  HttpWorker.prototype.__getWorkScriptSrc = function () {
+    if (SCRIPT_SRC === null) throw new Error();
+    var arr = SCRIPT_SRC.split('/');
+    var last = arr.length - 1;
+    arr[last] = WORKER_FILE;
+    return arr.join('/');
+  };
+
+  HttpWorker.prototype.__getOpts = function (opts) {
+    return Object.assign({}, this.opts, opts);
+  };
+
+  HttpWorker.prototype.__setProgs = function (fnc) {
+    var _this = this;
+
+    fnc.map(function (v) {
+      _this[v] = function (cb) {
+        _this.worker.addEventListener('message', function (msg) {
+          var res = msg.data;
+          if (res.event === v) {
+            cb(res.data);
+          }
+        });
+        return _this;
+      };
+    });
+  };
+
+  HttpWorker.prototype.__setHttpMethods = function (methods) {
+    var _this2 = this;
+
+    methods.map(function (method) {
+      _this2[method] = function (url, opts) {
+        opts.url = url;
+        opts.method = method.toUpperCase();
+        return _this2.request(opts);
+      };
+    });
+  };
+
+  HttpWorker.prototype.request = function (data, success, error) {
+    var _this3 = this;
+
+    var opts = this.__getOpts(data);
+    this.worker.postMessage(opts);
+
+    return new Promise(function (resolve, reject) {
+      _this3.worker.onmessage = function (msg) {
+        var res = msg.data;
+        if (res.event === 'success') resolve(res.data, res.status);
+
+        if (res.event === 'error') reject(res.data);
+
+        if (res.event === 'timeout') reject(res.data);
+      };
+    });
+  };
+
+  window.httpWorker = new HttpWorker();
+
+  if (typeof Object.assign != 'function') {
+    Object.assign = function (target) {
+      'use strict';
+
+      if (target === undefined || target === null) {
+        throw new TypeError('Cannot convert undefined or null to object');
+      }
+
+      var output = Object(target);
+      for (var idx = 1; idx < arguments.length; idx++) {
+        var source = arguments[idx];
+        if (source !== undefined && source !== null) {
+          for (var nextKey in source) {
+            if (Object.prototype.hasOwnProperty.call(source, nextKey)) {
+              output[nextKey] = source[nextKey];
+            }
+          }
+        }
+      }
+      return output;
+    };
+  }
+})(window);
+
+},{"es6-promise":1}]},{},[3]);

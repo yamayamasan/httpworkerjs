@@ -1,16 +1,14 @@
 'use strict';
-require('es6-promise').polyfill();
 
 (function(window) {
-  const WORKER_FILE = 'worker.js';
-  const HTTPWORKER_FILE = 'httpworker.js';
-  const scripts = document.getElementsByTagName('script');
-  const SCRIPT_SRC = scripts[scripts.length - 1].src;
+  var WORKER_FILE = '%WORKER_FILE_NAME%';
+  var scripts = document.getElementsByTagName('script');
+  var SCRIPT_SRC = scripts[scripts.length - 1].src;
 
   function HttpWorker() {
-    const dones = ['success', 'error', 'timeout'];
-    const progs = ['start', 'progress', 'end'];
-    const httpMethods = ['get', 'post', 'put', 'delete', 'head'];
+    var dones = ['success', 'error', 'timeout'];
+    var progs = ['start', 'progress', 'end'];
+    var httpMethods = ['get', 'post', 'put', 'delete', 'head'];
     this.worker = new Worker(this.__getWorkScriptSrc());
     this.__setDones(dones);
     this.__setProgs(progs);
@@ -23,9 +21,8 @@ require('es6-promise').polyfill();
 
   HttpWorker.prototype.__getWorkScriptSrc = function() {
     if (SCRIPT_SRC === null) throw new Error();
-    const arr = SCRIPT_SRC.split('/');
-    const last = arr.length - 1;
-    if (arr[last] !== HTTPWORKER_FILE) throw new Error('Failed httpworker.js');
+    var arr = SCRIPT_SRC.split('/');
+    var last = arr.length - 1;
     arr[last] = WORKER_FILE;
     return arr.join('/');
   };
@@ -34,42 +31,61 @@ require('es6-promise').polyfill();
     return Object.assign({}, this.opts, opts);
   };
 
+  HttpWorker.prototype.__setDones = function(fnc) {
+    var _this = this;
+    fnc.map(function(v) {
+      _this[v] = function(cb) {
+        _this.worker.addEventListener('message', function(msg) {
+          var res = msg.data;
+          if (res.event === v) {
+            cb(res.data, res.status);
+          }
+        });
+        return _this;
+      }
+    });
+  };
+
   HttpWorker.prototype.__setProgs = function(fnc) {
-    fnc.map((v) => {
-      this[v] = (cb) => {
-        this.worker.addEventListener('message', (msg) => {
-          const res = msg.data;
+    var _this = this;
+    fnc.map(function(v) {
+      _this[v] = function(cb) {
+        _this.worker.addEventListener('message', function(msg) {
+          var res = msg.data;
           if (res.event === v) {
             cb(res.data);
           }
         });
-        return this;
+        return _this;
       }
     });
   };
 
   HttpWorker.prototype.__setHttpMethods = function(methods) {
-    methods.map((method) => {
-      this[method] = (url, opts) => {
+    var _this = this;
+    methods.map(function(method){
+      _this[method] = function(url, opts) {
         opts.url = url;
         opts.method = method.toUpperCase();
-        return this.request(opts);
+        return _this.request(opts);
       };
     });
   };
 
   HttpWorker.prototype.request = function(data, success, error) {
-    const opts = this.__getOpts(data);
+    var opts = this.__getOpts(data);
     this.worker.postMessage(opts);
 
-    return new Promise((resolve, reject) => {
-      this.worker.onmessage = (msg) => {
-        const res = msg.data;
-        if (res.event === 'success') resolve(res.data, res.status);
+    // tmp code
+    if (success || error) {
+      this.worker.onmessage = function(msg) {
+        var res = msg.data;
+        if (success && res.event === 'success') success(res.data);
+        if (error && res.event === 'error') error(res.data);
+      }
+    }
 
-        if (res.event === 'error') reject(res.data);
-      };
-    });
+    return this;
   };
 
   window.httpWorker = new HttpWorker();

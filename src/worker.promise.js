@@ -1,15 +1,13 @@
 onmessage = onMessage;
 
 function onMessage(message) {
-  var self = this.self;
-  var xhr = new XMLHttpRequest();
-  var data = message.data;
-  var params = null;
-
-  xhr.open(data.method, data.url);
+  const self = this.self;
+  const xhr = new XMLHttpRequest();
+  const data = message.data;
+  let params = null;
 
   if (data.headers) {
-    Object.keys(data.headers).forEach(function(v){
+    forEach(data.headers, (v) => {
       xhr.setRequestHeader(v, data.headers[v]);
     });
   }
@@ -19,6 +17,8 @@ function onMessage(message) {
   if (data.params) params = __toStringParams(data.params);
 
   if (data.timeout) xhr.timeout = data.timeout;
+
+  xhr.open(data.method, data.url);
 
   xhr.onload = function (r) {
     var res = __parseResonse(this);
@@ -88,12 +88,14 @@ function __parseResonse (__this) {
 }
 
 function __toStringParams(params) {
-  var text = '';
-  Object.keys(params).forEach(function(v, i){
+  let text = '';
+  forEach(params, (v, i) => {
     if (i > 0) text += '&';
     text += v + '=' + params[v];
   });
   return text;
 }
 
-
+function forEach(vals, cb) {
+  Object.keys(vals).forEach(cb);
+}
