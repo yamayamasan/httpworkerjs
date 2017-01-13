@@ -1,20 +1,30 @@
 'use strict';
 
 (function(window) {
-  var WORKER_SRC = null;
+  var WORKER_FILE = 'worker.js';
+  var HTTPWORKER_FILE = 'httpworker.js';
   var scripts = document.getElementsByTagName('script');
-  FILE_SRC = scripts[scripts.length - 1].src;
+  var SCRIPT_SRC = scripts[scripts.length - 1].src;
 
   function HttpWorker() {
     var dones = ['success', 'error', 'timeout'];
     var progs = ['start', 'progress', 'end'];
-    var httpMethods = ['get', 'post'];
+    var httpMethods = ['get', 'post', 'put', 'delete', 'head'];
     this.worker = new Worker(this.__getWorkScriptSrc());
     this.__setDones(dones);
     this.__setProgs(progs);
     this.__setHttpMethods(httpMethods);
     this.__initOpts();
   }
+
+  HttpWorker.prototype.__getWorkScriptSrc = function() {
+    if (SCRIPT_SRC === null) throw new Error();
+    var arr = SCRIPT_SRC.split('/');
+    var last = arr.length - 1;
+    if (arr[last] !== HTTPWORKER_FILE) throw new Error('Failed httpworker.js');
+    arr[last] = WORKER_FILE;
+    return arr.join('/');
+  };
 
   HttpWorker.prototype.__initOpts = function() {
     this.opts = {
@@ -26,21 +36,13 @@
   HttpWorker.prototype.__setOpts = function(vals) {
     var _this = this;
     Object.keys(vals).forEach(function(key){
-      _this.opts[key] = vals[key];
+      _this.__setOpt(key, vals[key]);
+      // _this.opts[key] = vals[key];
     });
   };
 
   HttpWorker.prototype.__setOpt = function(key, val) {
     this.opts[key] = val;
-  };
-
-  HttpWorker.prototype.__getWorkScriptSrc = function() {
-    if (FILE_SRC === null) throw new Error();
-    var arr = FILE_SRC.split('/');
-    var last = arr.length - 1;
-    if (arr[last] !== 'httpworker.js') throw new Error('Failed httpworker.js');
-    arr[last] = 'worker.js';
-    return arr.join('/');
   };
 
   HttpWorker.prototype.__setDones = function(fnc) {
