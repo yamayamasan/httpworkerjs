@@ -14,7 +14,10 @@
     this.__setDones(dones);
     this.__setProgs(progs);
     this.__setHttpMethods(httpMethods);
-    this.__initOpts();
+    this.opts = {
+      url: null,
+      method: 'GET'
+    };
   }
 
   HttpWorker.prototype.__getWorkScriptSrc = function() {
@@ -26,23 +29,8 @@
     return arr.join('/');
   };
 
-  HttpWorker.prototype.__initOpts = function() {
-    this.opts = {
-      url: null,
-      method: 'GET'
-    };
-  };
-
-  HttpWorker.prototype.__setOpts = function(vals) {
-    var _this = this;
-    Object.keys(vals).forEach(function(key){
-      _this.__setOpt(key, vals[key]);
-      // _this.opts[key] = vals[key];
-    });
-  };
-
-  HttpWorker.prototype.__setOpt = function(key, val) {
-    this.opts[key] = val;
+  HttpWorker.prototype.__getOpts = function(opts) {
+    return Object.assign({}, this.opts, opts);
   };
 
   HttpWorker.prototype.__setDones = function(fnc) {
@@ -79,17 +67,16 @@
     var _this = this;
     methods.map(function(method){
       _this[method] = function(url, opts) {
-        _this.__setOpt('url', url);
-        _this.__setOpt('method', method.toUpperCase());
-        _this.__setOpts(opts);
-        _this.request();
+        opts.url = url;
+        opts.method = method.toUpperCase();
+        return _this.request();
       };
     });
   };
 
   HttpWorker.prototype.request = function(data, success, error) {
-    this.__setOpts(data);
-    this.worker.postMessage(this.opts);
+    var opts = this.__getOpts(data);
+    this.worker.postMessage(opts);
 
     // tmp code
     if (success || error) {
@@ -104,6 +91,28 @@
   };
 
   window.httpWorker = new HttpWorker();
+
+  if (typeof Object.assign != 'function') {
+    Object.assign = function (target) {
+      'use strict';
+      if (target === undefined || target === null) {
+        throw new TypeError('Cannot convert undefined or null to object');
+      }
+
+      var output = Object(target);
+      for (var index = 1; index < arguments.length; index++) {
+        var source = arguments[index];
+        if (source !== undefined && source !== null) {
+          for (var nextKey in source) {
+            if (Object.prototype.hasOwnProperty.call(source, nextKey)) {
+              output[nextKey] = source[nextKey];
+            }
+          }
+        }
+      }
+      return output;
+    };
+  }
 
 }(window));
 
